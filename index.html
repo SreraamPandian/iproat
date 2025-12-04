@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partners - 3D Perspective Slider</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+            background: #000;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .perspective-container {
+            perspective: 1000px;
+            transform-style: preserve-3d;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            position: relative;
+            z-index: 50;
+            text-decoration: none;
+            display: block;
+        }
+
+        .glass-card:hover {
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-inner {
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .card-inner.active {
+            transform: translateZ(30px);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
+        }
+
+        .logo-image {
+            height: 40px;
+            width: auto;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .logo-image {
+                height: 35px;
+            }
+        }
+
+        .header-logo {
+            height: 60px;
+            width: auto;
+            margin-bottom: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-logo {
+                height: 45px;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 3D Particle Background -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Main Content -->
+    <div class="min-h-screen flex items-center justify-center p-5" x-data="partnerSlider()">
+        <div class="perspective-container w-full">
+            <!-- Header with FSIS Logo -->
+            <div class="flex justify-center fade-in">
+                <img src="images/fsis.jpg" alt="FSIS" class="header-logo">
+            </div>
+
+            <!-- Logo Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-8 max-w-[1000px] mx-auto px-5">
+                <a href="https://fsis.ipro-people.com" target="_blank" class="glass-card fade-in"
+                    style="animation-delay: 0.2s;">
+                    <div class="card-inner" :style="`transform: rotateX(${tiltX}deg) rotateY(${tiltY}deg)`"
+                        @mouseenter="activeCard = 1" @mouseleave="activeCard = null"
+                        :class="{ 'active': activeCard === 1 }">
+                        <div class="logo-container">
+                            <img src="images/Pro-People (white).png" alt="Pro-People" class="logo-image">
+                        </div>
+                    </div>
+                </a>
+
+                <a href="https://fsis-school.iproatdemo.com/login" target="_blank" class="glass-card fade-in"
+                    style="animation-delay: 0.3s;">
+                    <div class="card-inner" :style="`transform: rotateX(${tiltX}deg) rotateY(${tiltY}deg)`"
+                        @mouseenter="activeCard = 2" @mouseleave="activeCard = null"
+                        :class="{ 'active': activeCard === 2 }">
+                        <div class="logo-container">
+                            <img src="images/Pro-School (White) (1).png" alt="Pro-School" class="logo-image">
+                        </div>
+                    </div>
+                </a>
+
+                <a href="https://iproatwms.co.in/fsis/" target="_blank" class="glass-card fade-in"
+                    style="animation-delay: 0.1s;">
+                    <div class="card-inner" :style="`transform: rotateX(${tiltX}deg) rotateY(${tiltY}deg)`"
+                        @mouseenter="activeCard = 0" @mouseleave="activeCard = null"
+                        :class="{ 'active': activeCard === 0 }">
+                        <div class="logo-container">
+                            <img src="images/Pro-Biz (white).png" alt="Pro-Biz" class="logo-image">
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Alpine.js Component for Tilt Effect
+        function partnerSlider() {
+            return {
+                tiltX: 0,
+                tiltY: 0,
+                activeCard: null,
+
+                init() {
+                    // Device Orientation (Mobile/Tablet)
+                    if (window.DeviceOrientationEvent) {
+                        window.addEventListener('deviceorientation', (event) => {
+                            const beta = event.beta || 0;
+                            const gamma = event.gamma || 0;
+
+                            this.tiltX = Math.max(-15, Math.min(15, beta / 6));
+                            this.tiltY = Math.max(-15, Math.min(15, gamma / 6));
+                        });
+                    }
+
+                    // Mouse Movement (Desktop)
+                    document.addEventListener('mousemove', (event) => {
+                        const x = (event.clientX / window.innerWidth - 0.5) * 30;
+                        const y = (event.clientY / window.innerHeight - 0.5) * 30;
+
+                        this.tiltX = -y / 2;
+                        this.tiltY = x / 2;
+                    });
+                }
+            }
+        }
+
+        // Three.js Particle Background
+        window.addEventListener('load', initThreeJS);
+
+        function initThreeJS() {
+            // 1. Scene Setup
+            const canvas = document.getElementById('particle-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            const renderer = new THREE.WebGLRenderer({
+                canvas: canvas,
+                alpha: true,
+                antialias: true
+            });
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // 2. Create Particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1000;
+
+            const posArray = new Float32Array(particlesCount * 3);
+
+            // Randomly position particles
+            for (let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 15; // Spread range
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            const particlesMaterial = new THREE.PointsMaterial({
+                color: 0x8b5cf6, // Violet color
+                size: 0.015,
+                transparent: true,
+                opacity: 0.7,
+                sizeAttenuation: true
+            });
+
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+
+            // Position camera back so we can see the scene
+            camera.position.z = 3;
+
+            // 3. Lights (Optional for Basic Particles)
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+
+            // 4. Animation Loop
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                const time = Date.now() * 0.0005;
+
+                // Rotate the entire particle cloud slowly
+                particlesMesh.rotation.x = time * 0.1;
+                particlesMesh.rotation.y = time * 0.15;
+
+                // Create the "Wave" effect
+                const positions = particlesGeometry.attributes.position.array;
+
+                for (let i = 0; i < particlesCount; i++) {
+                    const i3 = i * 3;
+                    // Modify Z based on X and time to create a sine wave
+                    positions[i3 + 2] = Math.sin(positions[i3] + time) * 0.5;
+                }
+
+                // Important: Tell Three.js the positions have changed
+                particlesGeometry.attributes.position.needsUpdate = true;
+
+                renderer.render(scene, camera);
+            };
+
+            // 5. Handle Window Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Start the loop
+            animate();
+        }
+    </script>
+</body>
+
+</html>
